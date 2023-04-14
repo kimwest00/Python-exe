@@ -2,17 +2,36 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from openpyxl import Workbook
-
+from enum import Enum
 #TODO:excel에 데이터 저장
 # 가져온 데이터를 기반으로 엑셀 파일 생성
-def writeWorkbook(i,j):
-    write_wb = Workbook()
-    write_ws = write_wb.create_sheet('참석자 시트')
-    write_ws = write_wb.active
-    # for j in i_list:
-    #     write_ws.append(people)
-    write_wb.save("./testOutput.xlsx")   
+
+class ColNameKey(Enum):
+   
+    TITLE = '데이터 제목'
+    DETAIL = '상세설명'
+    LINK = '바로가기 링크'
+    FACILITY ='제공기관'
+    MODIFYAT = '수정일'
+    VIEW = '조회수'
+    DOWNLOAD = '다운로드'
+    FREQUENTDATA = '주기성 데이터'
+    KEYWORD = '키워드'
     
+   
+write_wb = Workbook()
+sheet = write_wb.active
+sheet.title = "고용노동 데이터"
+col_name = [e.value for e in ColNameKey]
+print(col_name)
+for idx, name in enumerate(col_name):
+    sheet.cell(row=1,column=idx+1,value=name)
+def writeWorkbook(idx,key,value):
+    try:
+        sheet.cell(row=idx,column=col_name.index(ColNameKey(key).value)+1,value=value)
+    except:
+        sheet.cell(row=idx,column=col_name.index(key)+1,value=value)
+        
 # ChromeDriver 경로 설정
 DRIVER_PATH = 'C:/Users/MinSeo/Downloads/chromedriver_win32/chromdriver.exe'
 URL = 'https://www.moel.go.kr/info/publicdata/publicopen/list.do'
@@ -44,7 +63,7 @@ for page in range(1,19):
     for data in data_list:
         detail_title_area = data.find_element(By.CSS_SELECTOR ,'dl')
         title = detail_title_area.find_element(By.CSS_SELECTOR ,'dt a span.title').text
-
+        writeWorkbook(page,ColNameKey.TITLE,title)
         # display 속성을 변경하여 화면에 표시되도록 만듦
         # @media 태그로 인해서 바로 수정되지않아, viewport 크기를 변경함으로써
         # 수정될수있도록 함
@@ -52,21 +71,30 @@ for page in range(1,19):
             "Object.defineProperty(window, 'innerWidth', {value: 1025, configurable: true});var dd_list = document.querySelectorAll('.data-set-list .result-list ul li dl dd');for (var i = 0; i < dd_list.length; i++) {dd_list[i].style.display = 'block';}")
         details = detail_title_area.find_elements(By.TAG_NAME ,"dd")
         link = detail_title_area.find_element(By.CSS_SELECTOR ,'dt a').get_attribute('href')
+        writeWorkbook(page,ColNameKey.LINK,link)
+
         for detail in details:
-            print(detail.text)
-        
+            detail_list = ''
+            detail_list += detail.text
+            writeWorkbook(page,ColNameKey.DETAIL,detail_list)
         info_data = data.find_elements(By.CSS_SELECTOR ,'div.info-data p')
         for info in info_data:
-            print(info.find_element(By.CSS_SELECTOR ,'span.tit').text)
+            span_title = info.find_element(By.CSS_SELECTOR ,'span.tit').text
             try:
-                print(info.find_element(By.CSS_SELECTOR ,'span.data').text)
+                span_data = info.find_element(By.CSS_SELECTOR ,'span.data').text
             except:
-                print(info.text.split(' ')[1].split(','))
+                tmp_span_data = info.text.split(' ')[1].split(',')
+                span_data = ','.join(map(str, tmp_span_data))
+            
+            writeWorkbook(page,ColNameKey(span_title).value,span_data)
         driver.execute_script(
             "$('#search-form-current-page').val(arguments[0]);",page
         )
+        
+
 # iframe 바깥으로 이동
 driver.switch_to.default_content()
+write_wb.save("./testOutput.xlsx")   
 
 # 웹 브라우저 종료
 driver.quit()
