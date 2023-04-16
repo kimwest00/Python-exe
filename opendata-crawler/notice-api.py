@@ -57,8 +57,10 @@ driver.switch_to.frame(iframe)
 index = 2
 # 정보 요소 가져오기
 for page in range(1,19):
+    #TODO: pagination 미적용 오류 개선
     driver.execute_script(
-        "$('#search-form-current-page').val(arguments[0]);",page
+        #    "$('#search-form-current-page').val(arguments[0]);",page
+        "eventFnObj.fn_dTypeClick('FILE');updatePage(arguments[0])",page
     )
     element = driver.find_element(By.CSS_SELECTOR ,'#fileDataList div.result-list ul')
     #list로 가져오기
@@ -75,7 +77,7 @@ for page in range(1,19):
         details = detail_title_area.find_elements(By.TAG_NAME ,"dd")
         link = detail_title_area.find_element(By.CSS_SELECTOR ,'dt a').get_attribute('href')
         writeWorkbook(index,ColNameKey.LINK,link)
-
+        print('링크 테스트'+link)
         for detail in details:
             detail_list = ''
             detail_list += detail.text
